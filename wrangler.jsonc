@@ -1,0 +1,14 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "gc-edu-portal",
+  "compatibility_date": "2026-03-24",
+  "pages_build_output_dir": "./dist",
+  "compatibility_flags": ["nodejs_compat"],
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "gc-edu-portal-db",
+      "database_id": "a8ab4cc2-8664-43b1-adc6-5a3b909f068f"
+    }
+  ]
+}

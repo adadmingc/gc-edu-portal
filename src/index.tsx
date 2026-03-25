@@ -46,7 +46,6 @@ function err(msg: string, status = 400) {
 // 인증
 // ══════════════════════════════════════
 
-// 관리자 로그인
 app.post('/api/auth/admin', async (c) => {
   const { password } = await c.req.json()
   const row = await c.env.DB.prepare(
@@ -57,7 +56,6 @@ app.post('/api/auth/admin', async (c) => {
   return ok({ type: 'admin' })
 })
 
-// 직원 로그인
 app.post('/api/auth/employee', async (c) => {
   const { name, empId } = await c.req.json()
   const emp = await c.env.DB.prepare(
@@ -67,7 +65,6 @@ app.post('/api/auth/employee', async (c) => {
   return ok({ type: 'employee', emp })
 })
 
-// 비밀번호 변경
 app.post('/api/auth/change-pw', async (c) => {
   const { current, next } = await c.req.json()
   const row = await c.env.DB.prepare(
@@ -85,7 +82,6 @@ app.post('/api/auth/change-pw', async (c) => {
 // 직원 CRUD
 // ══════════════════════════════════════
 
-// 전체 목록
 app.get('/api/employees', async (c) => {
   const { results } = await c.env.DB.prepare(
     `SELECT * FROM employees ORDER BY created_at DESC`
@@ -93,7 +89,6 @@ app.get('/api/employees', async (c) => {
   return ok(results)
 })
 
-// 추가
 app.post('/api/employees', async (c) => {
   const { name, empId, dept, rank, joinDate } = await c.req.json()
   if (!name || !empId) return err('이름과 사번은 필수입니다')
@@ -107,7 +102,30 @@ app.post('/api/employees', async (c) => {
   }
 })
 
-// 수정
+app.post('/api/employees/bulk', async (c) => {
+  const { employees } = await c.req.json()
+  if (!Array.isArray(employees)) return err('잘못된 형식입니다')
+  let added = 0, updated = 0
+  for (const e of employees) {
+    if (!e.name || !e.empId) continue
+    const existing = await c.env.DB.prepare(
+      `SELECT id FROM employees WHERE emp_id=?`
+    ).bind(e.empId).first()
+    if (existing) {
+      await c.env.DB.prepare(
+        `UPDATE employees SET name=?,dept=?,rank=?,join_date=? WHERE emp_id=?`
+      ).bind(e.name, e.dept??'', e.rank??'', e.joinDate??'', e.empId).run()
+      updated++
+    } else {
+      await c.env.DB.prepare(
+        `INSERT INTO employees(name,emp_id,dept,rank,join_date) VALUES(?,?,?,?,?)`
+      ).bind(e.name, e.empId, e.dept??'', e.rank??'', e.joinDate??'').run()
+      added++
+    }
+  }
+  return ok({ added, updated })
+})
+
 app.put('/api/employees/:empId', async (c) => {
   const empId = c.req.param('empId')
   const { name, dept, rank, joinDate } = await c.req.json()
@@ -117,7 +135,6 @@ app.put('/api/employees/:empId', async (c) => {
   return ok(null)
 })
 
-// 삭제
 app.delete('/api/employees/:empId', async (c) => {
   const empId = c.req.param('empId')
   await c.env.DB.prepare(`DELETE FROM employees WHERE emp_id=?`).bind(empId).run()
@@ -129,7 +146,6 @@ app.delete('/api/employees/:empId', async (c) => {
 // 이수 현황 CRUD
 // ══════════════════════════════════════
 
-// 전체 이수 현황
 app.get('/api/training', async (c) => {
   const { results } = await c.env.DB.prepare(
     `SELECT * FROM training`
@@ -137,7 +153,6 @@ app.get('/api/training', async (c) => {
   return ok(results)
 })
 
-// 직원별 이수 현황
 app.get('/api/training/:empId', async (c) => {
   const empId = c.req.param('empId')
   const { results } = await c.env.DB.prepare(
@@ -146,7 +161,6 @@ app.get('/api/training/:empId', async (c) => {
   return ok(results)
 })
 
-// 이수증 제출
 app.post('/api/training/:empId/:catId/submit', async (c) => {
   const empId = c.req.param('empId')
   const catId = c.req.param('catId')
@@ -165,7 +179,6 @@ app.post('/api/training/:empId/:catId/submit', async (c) => {
   return ok(null)
 })
 
-// 완료 체크 (파일 없이)
 app.post('/api/training/:empId/:catId/check', async (c) => {
   const empId = c.req.param('empId')
   const catId = c.req.param('catId')
@@ -183,7 +196,6 @@ app.post('/api/training/:empId/:catId/check', async (c) => {
   return ok(null)
 })
 
-// 승인 / 반려
 app.post('/api/training/:empId/:catId/review', async (c) => {
   const empId = c.req.param('empId')
   const catId = c.req.param('catId')
@@ -197,7 +209,6 @@ app.post('/api/training/:empId/:catId/review', async (c) => {
   return ok(null)
 })
 
-// 보완 요청
 app.post('/api/training/:empId/:catId/supplement', async (c) => {
   const empId = c.req.param('empId')
   const catId = c.req.param('catId')
@@ -249,7 +260,6 @@ app.delete('/api/guideline/:id', async (c) => {
 // 교육 지침 / 결과보고서 양식 (edu_docs)
 // ══════════════════════════════════════
 
-// 목록 조회
 app.get('/api/edu-docs', async (c) => {
   const { results } = await c.env.DB.prepare(
     `SELECT id,cat_id,doc_type,title,file_name,created_at FROM edu_docs ORDER BY cat_id,doc_type,created_at DESC`
@@ -257,7 +267,6 @@ app.get('/api/edu-docs', async (c) => {
   return ok(results)
 })
 
-// 분야별 조회
 app.get('/api/edu-docs/:catId', async (c) => {
   const catId = c.req.param('catId')
   const { results } = await c.env.DB.prepare(
@@ -266,7 +275,6 @@ app.get('/api/edu-docs/:catId', async (c) => {
   return ok(results)
 })
 
-// 파일 다운로드 (file_data 포함)
 app.get('/api/edu-docs/:catId/:id/download', async (c) => {
   const id = c.req.param('id')
   const row = await c.env.DB.prepare(
@@ -276,7 +284,6 @@ app.get('/api/edu-docs/:catId/:id/download', async (c) => {
   return ok({ fileName: row.file_name, fileData: row.file_data })
 })
 
-// 업로드 (추가)
 app.post('/api/edu-docs', async (c) => {
   const { catId, docType, title, fileName, fileData } = await c.req.json()
   if (!catId || !docType || !title) return err('필수 항목이 누락되었습니다')
@@ -286,7 +293,6 @@ app.post('/api/edu-docs', async (c) => {
   return ok({ id: r.meta.last_row_id })
 })
 
-// 삭제
 app.delete('/api/edu-docs/:id', async (c) => {
   const id = c.req.param('id')
   await c.env.DB.prepare(`DELETE FROM edu_docs WHERE id=?`).bind(id).run()
@@ -294,8 +300,9 @@ app.delete('/api/edu-docs/:id', async (c) => {
 })
 
 // ══════════════════════════════════════
-// 교육결과보고서 엑셀 데이터 (전직원 현황)
+// 교육결과보고서 엑셀 데이터
 // ══════════════════════════════════════
+
 app.get('/api/export/training', async (c) => {
   const { results: emps } = await c.env.DB.prepare(
     `SELECT * FROM employees ORDER BY dept, name`

@@ -1,6 +1,5 @@
 // ══════════════════════════════════════
 // GC 교육 포털 — 공통 API 클라이언트
-// localStorage 완전 제거, 모든 데이터는 서버 API로
 // ══════════════════════════════════════
 
 const API = {
@@ -43,11 +42,13 @@ async function apiUpdateEmp(empId, emp) {
 async function apiDeleteEmp(empId) {
   return API.del(`/api/employees/${empId}`);
 }
+async function apiBulkEmps(employees) {
+  return API.post('/api/employees/bulk', { employees });
+}
 
 // ── 이수 현황 ──
 async function apiGetTraining() {
   const r = await API.get('/api/training');
-  // { emp_id, cat_id, ... } 배열을 { [empId]: { [catId]: row } } 형태로 변환
   const map = {};
   for (const row of (r.ok ? r.data : [])) {
     if (!map[row.emp_id]) map[row.emp_id] = {};
@@ -61,6 +62,7 @@ async function apiGetTraining() {
       supplementRequested: !!row.supplement_requested,
       supplementReason: row.supplement_reason,
       supplementAt: row.supplement_at,
+      trainHours: row.train_hours,
     };
   }
   return map;
@@ -79,6 +81,7 @@ async function apiGetEmpTraining(empId) {
       supplementRequested: !!row.supplement_requested,
       supplementReason: row.supplement_reason,
       supplementAt: row.supplement_at,
+      trainHours: row.train_hours,
     };
   }
   return map;
@@ -96,23 +99,26 @@ async function apiSupplement(empId, catId, reason) {
   return API.post(`/api/training/${empId}/${catId}/supplement`, { reason });
 }
 
-// ── 교육방침 자료 ──
+// ── 교육 방침 자료 ──
 async function apiGetGuideline() {
   const r = await API.get('/api/guideline');
-  // cat_id별로 그룹핑
   const map = {};
   for (const row of (r.ok ? r.data : [])) {
     if (!map[row.cat_id]) map[row.cat_id] = { desc: '', items: [] };
-    map[row.cat_id].items.push({
-      id: row.id,
-      emoji: row.emoji,
-      name: row.name,
-      url: row.url,
-      linkDesc: row.link_desc,
-      type: row.type,
-      videoName: row.video_name,
-      videoData: row.video_data,
-    });
+    if (row.name === '__desc__') {
+      map[row.cat_id].desc = row.link_desc || '';
+    } else {
+      map[row.cat_id].items.push({
+        id: row.id,
+        type: row.type,
+        emoji: row.emoji,
+        name: row.name,
+        url: row.url,
+        linkDesc: row.link_desc,
+        videoName: row.video_name,
+        videoData: row.video_data,
+      });
+    }
   }
   return map;
 }

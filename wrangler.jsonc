@@ -2,7 +2,11 @@
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "gc-edu-portal",
   "compatibility_date": "2026-03-24",
-  "main": "src/index.tsx",
+  "main": "dist/_worker.js",
+  "assets": {
+    "directory": "./dist",
+    "binding": "ASSETS"
+  },
   "compatibility_flags": ["nodejs_compat"],
   "d1_databases": [
     {

@@ -863,12 +863,10 @@ app.post('/api/onboarding/employees', async (c) => {
   const { name, emp_id, dept, position, email, hire_date, emp_type, notes } = await c.req.json()
   if (!name || !emp_id || !hire_date) return err('성명, 사번, 입사일은 필수입니다')
 
-  // 수습 만료일 계산 (입사일 + 90일)
   const hd = new Date(hire_date)
   hd.setDate(hd.getDate() + 90)
   const probation_end = hd.toISOString().slice(0, 10)
 
-  // employees 테이블에 없으면 자동 추가
   const existing = await c.env.DB.prepare(
     `SELECT emp_id FROM employees WHERE emp_id = ?`
   ).bind(emp_id).first()
@@ -887,7 +885,6 @@ app.post('/api/onboarding/employees', async (c) => {
 
   const newId = result.meta.last_row_id
 
-  // 체크리스트 항목 자동 생성
   const { results: items } = await c.env.DB.prepare(
     `SELECT id FROM onboarding_checklist_items WHERE is_active=1`
   ).all()

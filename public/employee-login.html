@@ -1395,7 +1395,9 @@ async function empLogin() {
   if (r.ok) {
     if (errEl) errEl.style.display = 'none';
     sessionStorage.setItem('edu_current_user', JSON.stringify({ type: 'employee', emp: r.data.emp }));
-    window.location.href = 'employee.html';
+    const _r = localStorage.getItem('edu_login_redirect');
+if (_r) { localStorage.removeItem('edu_login_redirect'); window.location.href = _r; }
+else { window.location.href = 'employee.html'; }
   } else {
     if (errEl) { errEl.textContent = r.error || '로그인에 실패했습니다.'; errEl.style.display = 'block'; }
   }

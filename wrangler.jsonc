@@ -2,7 +2,7 @@
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "gc-edu-portal",
   "compatibility_date": "2026-03-24",
-  "pages_build_output_dir": "./dist",
+  "pages_build_output_dir": "./public",
   "compatibility_flags": ["nodejs_compat"],
   "d1_databases": [
     {

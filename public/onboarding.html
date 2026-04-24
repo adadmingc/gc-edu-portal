@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>입사자 온보딩 — GC 교육포털</title>
+<script src="/static/api.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'맑은 고딕',sans-serif;background:#f4f6fb;color:#1a202c;font-size:14px}
+.header{background:#0f6e56;color:#fff;padding:14px 24px;display:flex;align-items:center;justify-content:space-between}
+.header h1{font-size:17px;font-weight:600}
+.header .nav a{color:#a7f3d0;text-decoration:none;margin-left:16px;font-size:13px}
+.header .nav a:hover{color:#fff}
+.container{max-width:960px;margin:0 auto;padding:24px 20px}
+.welcome-card{background:linear-gradient(135deg,#1d4e89,#0f6e56);color:#fff;border-radius:12px;padding:24px;margin-bottom:20px}
+.welcome-card h2{font-size:20px;font-weight:700;margin-bottom:6px}
+.welcome-card p{font-size:13px;opacity:.85}
+.welcome-meta{display:flex;gap:20px;margin-top:14px;flex-wrap:wrap}
+.welcome-meta span{background:rgba(255,255,255,.15);padding:5px 12px;border-radius:20px;font-size:12px}
+.section-title{font-size:15px;font-weight:700;color:#1d4e89;margin:20px 0 12px;display:flex;align-items:center;gap:8px}
+.card{background:#fff;border-radius:10px;border:1px solid #e2e8f0;padding:20px;margin-bottom:16px}
+.progress-overview{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:12px;margin-bottom:20px}
+.prog-card{background:#fff;border:1px solid #e2e8f0;border-radius:8px;padding:14px;text-align:center}
+.prog-num{font-size:22px;font-weight:700;color:#1d4e89}
+.prog-label{font-size:11px;color:#64748b;margin-top:3px}
+.big-progress{background:#e2e8f0;border-radius:8px;height:14px;overflow:hidden;margin-bottom:6px}
+.big-fill{background:linear-gradient(90deg,#1d4e89,#0f6e56);height:100%;border-radius:8px;transition:width .4s}
+.group-title{font-size:12px;font-weight:700;color:#64748b;background:#f1f5f9;padding:7px 12px;border-radius:6px;margin-bottom:6px;display:flex;align-items:center;justify-content:space-between}
+.checklist-item{display:flex;align-items:center;gap:10px;padding:9px 12px;border:1px solid #e2e8f0;border-radius:6px;margin-bottom:4px;background:#fff}
+.checklist-item.done{background:#f0fdf4;border-color:#bbf7d0}
+.check-icon{width:20px;height:20px;border-radius:50%;border:2px solid #e2e8f0;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:11px}
+.check-icon.done{background:#16a34a;border-color:#16a34a;color:#fff}
+.checklist-item span{flex:1;font-size:13px}
+.checklist-item.done span{color:#15803d}
+.checklist-item .done-date{font-size:11px;color:#94a3b8}
+.timeline{position:relative;padding-left:20px}
+.timeline::before{content:'';position:absolute;left:6px;top:0;bottom:0;width:2px;background:#e2e8f0}
+.timeline-item{position:relative;margin-bottom:16px;padding-left:20px}
+.timeline-dot{position:absolute;left:-14px;top:3px;width:12px;height:12px;border-radius:50%;border:2px solid #1d4e89;background:#fff}
+.timeline-dot.done{background:#16a34a;border-color:#16a34a}
+.timeline-dot.active{background:#1d4e89}
+.timeline-date{font-size:11px;color:#94a3b8;margin-bottom:2px}
+.timeline-label{font-size:13px;font-weight:600;color:#1a202c}
+.timeline-desc{font-size:12px;color:#64748b;margin-top:2px}
+.resource-item{display:flex;align-items:center;gap:12px;padding:12px;border:1px solid #e2e8f0;border-radius:8px;margin-bottom:8px;background:#fff;cursor:pointer;transition:background .15s;text-decoration:none;color:inherit}
+.resource-item:hover{background:#f8faff;border-color:#bfdbfe}
+.resource-icon{width:36px;height:36px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0}
+.resource-icon.file{background:#dbeafe}
+.resource-icon.link{background:#dcfce7}
+.resource-title{font-size:13px;font-weight:600}
+.resource-desc{font-size:11px;color:#64748b;margin-top:2px}
+.alert-box{background:#fef3c7;border:1px solid #fde68a;border-radius:8px;padding:12px 16px;margin-bottom:12px;font-size:13px;color:#92400e;display:flex;align-items:flex-start;gap:8px}
+.badge{display:inline-block;padding:3px 9px;border-radius:20px;font-size:11px;font-weight:600}
+.badge-ok{background:#dcfce7;color:#15803d}
+.badge-warn{background:#fef3c7;color:#d97706}
+.badge-danger{background:#fee2e2;color:#dc2626}
+</style>
+</head>
+<body>
+<div class="header">
+  <h1>🌱 입사자 온보딩</h1>
+  <div class="nav">
+    <a href="/employee.html">← 교육 포털</a>
+    <a href="#" onclick="logout()">로그아웃</a>
+  </div>
+</div>
+
+<div class="container" id="main-container">
+  <div style="text-align:center;padding:60px;color:#94a3b8">불러오는 중...</div>
+</div>
+
+<script>
+async function init() {
+  const session = JSON.parse(sessionStorage.getItem('empSession') || localStorage.getItem('empSession') || 'null');
+  if (!session) { location.href = '/employee-login.html'; return; }
+
+  const empId = session.emp_id || session.empId;
+  const [onboardingRes, resourcesRes] = await Promise.all([
+    api('/api/onboarding/employees'),
+    api('/api/onboarding/resources')
+  ]);
+
+  const myOnboarding = onboardingRes.ok
+    ? onboardingRes.data.find(e => e.emp_id === empId)
+    : null;
+
+  const resources = resourcesRes.ok ? resourcesRes.data : [];
+  const container = document.getElementById('main-container');
+
+  if (!myOnboarding) {
+    container.innerHTML = `
+      <div class="welcome-card">
+        <h2>안녕하세요, ${session.name}님! 👋</h2>
+        <p>GC에 오신 것을 환영합니다. 온보딩 정보를 불러올 수 없습니다.</p>
+        <p style="margin-top:6px;opacity:.7">HR 담당자에게 문의해 주세요.</p>
+      </div>
+      ${renderResources(resources)}`;
+    return;
+  }
+
+  const detailRes = await api('/api/onboarding/employees/' + myOnboarding.id);
+  const progress = detailRes.ok ? (detailRes.data.progress || []) : [];
+  const totalItems = progress.length;
+  const doneItems  = progress.filter(p => p.is_done).length;
+  const pct = totalItems ? Math.round(doneItems / totalItems * 100) : 0;
+  const dday = myOnboarding.dday;
+  let ddayBadge = `<span class="badge badge-ok">D-${dday}</span>`;
+  if (dday < 0) ddayBadge = `<span class="badge badge-danger">D+${Math.abs(dday)}</span>`;
+  else if (dday <= 7) ddayBadge = `<span class="badge badge-danger">D-${dday}</span>`;
+  else if (dday <= 20) ddayBadge = `<span class="badge badge-warn">D-${dday}</span>`;
+
+  const groups = {};
+  progress.forEach(p => {
+    if (!groups[p.group_name]) groups[p.group_name] = [];
+    groups[p.group_name].push(p);
+  });
+
+  let checklistHtml = '';
+  for (const [group, items] of Object.entries(groups)) {
+    const gDone = items.filter(i => i.is_done).length;
+    checklistHtml += `<div class="group-title">${group}<span>${gDone}/${items.length}</span></div>`;
+    items.forEach(item => {
+      checklistHtml += `<div class="checklist-item ${item.is_done ? 'done' : ''}">
+        <div class="check-icon ${item.is_done ? 'done' : ''}">${item.is_done ? '✓' : ''}</div>
+        <span>${item.item_name}</span>
+        ${item.done_at ? '<span class="done-date">' + item.done_at + '</span>' : ''}
+      </div>`;
+    });
+  }
+
+  const hireDateObj  = new Date(myOnboarding.hire_date);
+  const probEndObj   = new Date(myOnboarding.probation_end);
+  const evalDate     = new Date(probEndObj); evalDate.setDate(evalDate.getDate() - 20);
+  const evalDateStr  = evalDate.toISOString().slice(0,10);
+  const todayStr     = new Date().toISOString().slice(0,10);
+
+  container.innerHTML = `
+    <div class="welcome-card">
+      <h2>안녕하세요, ${session.name}님! 🎉</h2>
+      <p>GC 입사를 환영합니다. 아래 온보딩 절차를 순서대로 완료해 주세요.</p>
+      <div class="welcome-meta">
+        <span>📅 입사일: ${myOnboarding.hire_date}</span>
+        <span>⏳ 수습 만료: ${myOnboarding.probation_end} (${ddayBadge})</span>
+        <span>💼 ${myOnboarding.emp_type}</span>
+      </div>
+    </div>
+
+    ${dday <= 20 && dday >= 0 ? `<div class="alert-box">⚠️ 수습 만료까지 <strong>${dday}일</strong> 남았습니다. 미완료 항목을 확인해 주세요.</div>` : ''}
+
+    <div class="progress-overview">
+      <div class="prog-card"><div class="prog-num">${totalItems}</div><div class="prog-label">전체 항목</div></div>
+      <div class="prog-card"><div class="prog-num" style="color:#16a34a">${doneItems}</div><div class="prog-label">완료</div></div>
+      <div class="prog-card"><div class="prog-num" style="color:#dc2626">${totalItems - doneItems}</div><div class="prog-label">미완료</div></div>
+      <div class="prog-card"><div class="prog-num">${pct}%</div><div class="prog-label">진행률</div></div>
+    </div>
+    <div class="big-progress"><div class="big-fill" style="width:${pct}%"></div></div>
+    <p style="font-size:12px;color:#94a3b8;text-align:right;margin-bottom:20px">HR 담당자가 각 항목을 확인 후 체크합니다</p>
+
+    <div class="section-title">📋 온보딩 체크리스트</div>
+    <div class="card">${checklistHtml}</div>
+
+    <div class="section-title">📅 주요 일정</div>
+    <div class="card">
+      <div class="timeline">
+        <div class="timeline-item">
+          <div class="timeline-dot done"></div>
+          <div class="timeline-date">${myOnboarding.hire_date}</div>
+          <div class="timeline-label">입사일</div>
+          <div class="timeline-desc">온보딩 절차 시작</div>
+        </div>
+        <div class="timeline-item">
+          <div class="timeline-dot ${todayStr >= evalDateStr ? 'done' : ''}"></div>
+          <div class="timeline-date">${evalDateStr}</div>
+          <div class="timeline-label">수습 평가 (만료 20일 전)</div>
+          <div class="timeline-desc">HR 담당자로부터 평가서 수령 및 제출</div>
+        </div>
+        <div class="timeline-item">
+          <div class="timeline-dot ${myOnboarding.status === 'converted' ? 'done' : ''}"></div>
+          <div class="timeline-date">${myOnboarding.probation_end}</div>
+          <div class="timeline-label">수습 만료 / 정규직 전환</div>
+          <div class="timeline-desc">정규직 근로계약서 체결</div>
+        </div>
+      </div>
+    </div>
+
+    ${renderResources(resources)}`;
+}
+
+function renderResources(resources) {
+  const resourceItems = resources.map(r => {
+    const isFile = r.resource_type === 'file';
+    const href = isFile ? '#' : r.link_url;
+    const onclick = isFile ? `onclick="downloadResource(event,'${r.id}','${r.file_name}')"` : '';
+    return `<a class="resource-item" href="${href}" ${isFile ? '' : 'target="_blank"'} ${onclick}>
+      <div class="resource-icon ${r.resource_type}">${isFile ? '📄' : '🔗'}</div>
+      <div>
+        <div class="resource-title">${r.title}</div>
+        ${r.description ? '<div class="resource-desc">' + r.description + '</div>' : ''}
+      </div>
+    </a>`;
+  }).join('');
+
+  return `
+    <div class="section-title">📁 입사 안내자료</div>
+    <div class="card">
+      ${resources.length
+        ? resourceItems
+        : '<p style="color:#94a3b8;font-size:13px;text-align:center;padding:12px 0">등록된 안내자료가 없습니다. HR 담당자에게 문의해 주세요.</p>'
+      }
+    </div>
+
+    <div class="section-title">🎓 입사자 교육</div>
+    <div class="card" style="display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap">
+      <div>
+        <div style="font-size:14px;font-weight:600;color:#1a202c;margin-bottom:4px">GC 교육포털에서 입사자 교육을 수강하세요</div>
+        <div style="font-size:12px;color:#64748b">입사자 필수 교육 영상 및 자료를 확인할 수 있습니다</div>
+      </div>
+      <a href="/employee.html#onboarding-edu" style="display:inline-flex;align-items:center;gap:8px;background:#1d4e89;color:#fff;padding:10px 20px;border-radius:8px;text-decoration:none;font-size:13px;font-weight:600;white-space:nowrap;flex-shrink:0">
+        교육 포털 바로가기 →
+      </a>
+    </div>`;
+}
+
+async function downloadResource(e, id, fileName) {
+  e.preventDefault();
+  const res = await api('/api/onboarding/resources/' + id + '/download');
+  if (!res.ok) { alert('다운로드 실패'); return; }
+  const a = document.createElement('a');
+  a.href = 'data:application/octet-stream;base64,' + res.data.file_data;
+  a.download = fileName;
+  a.click();
+}
+
+function logout() {
+  sessionStorage.removeItem('empSession');
+  localStorage.removeItem('empSession');
+  location.href = '/employee-login.html';
+}
+
+init();
+</script>
+</body>
+</html>

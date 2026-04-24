@@ -96,7 +96,13 @@ async function adminLogin() {
       sessionStorage.setItem('edu_current_user', JSON.stringify(session));
       localStorage.setItem('edu_current_user', JSON.stringify(session));
       const redirect = new URLSearchParams(location.search).get('redirect') || '/admin.html';
-      location.href = redirect;
+const storedRedirect = localStorage.getItem('edu_login_redirect');
+if (storedRedirect) {
+  localStorage.removeItem('edu_login_redirect');
+  location.href = storedRedirect;
+  return;
+}
+location.href = redirect;
     } else {
       errEl.style.display = 'block';
       errEl.textContent = '비밀번호가 올바르지 않습니다.';

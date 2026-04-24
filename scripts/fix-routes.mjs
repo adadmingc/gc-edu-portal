@@ -12,4 +12,4 @@ const routes = {
 }
 
 writeFileSync(routesPath, JSON.stringify(routes, null, 2))
-console.log('_routes.json:', JSON.stringify(routes))
+console.log('_routes.json written:', JSON.stringify(routes))

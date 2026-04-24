@@ -1,17 +1,5 @@
 {
   "version": 1,
-  "include": ["/*"],
-  "exclude": [
-    "/static/*",
-    "/index.html",
-    "/admin.html",
-    "/admin-login.html",
-    "/admin-onboarding.html",
-    "/employee.html",
-    "/employee-login.html",
-    "/onboarding.html",
-    "/guideline.html",
-    "/notice.html",
-    "/favicon.svg"
-  ]
+  "include": ["/api/*"],
+  "exclude": []
 }

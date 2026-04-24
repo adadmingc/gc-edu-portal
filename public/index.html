@@ -1384,7 +1384,7 @@ function go(viewId) {
     'view-admin-login': 'admin-login.html',
     'view-emp-login':   'employee-login.html',
     'view-admin':       'admin.html',
-    'view-employee':    'employee.html',
+'view-employee':    (()=>{ const r=localStorage.getItem('edu_login_redirect'); if(r){localStorage.removeItem('edu_login_redirect');return r;} return 'employee.html'; })(),
   };
   if (map[viewId]) window.location.href = map[viewId];
 }

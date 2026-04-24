@@ -860,13 +860,25 @@ app.get('/api/onboarding/employees/:id', async (c) => {
 
 // ── 온보딩 직원 등록 ─────────────────────────────────────
 app.post('/api/onboarding/employees', async (c) => {
-  const { emp_id, hire_date, emp_type, notes } = await c.req.json()
-  if (!emp_id || !hire_date) return err('직원 ID와 입사일은 필수입니다')
+  const { name, emp_id, dept, position, email, hire_date, emp_type, notes } = await c.req.json()
+  if (!name || !emp_id || !hire_date) return err('성명, 사번, 입사일은 필수입니다')
 
   // 수습 만료일 계산 (입사일 + 90일)
   const hd = new Date(hire_date)
   hd.setDate(hd.getDate() + 90)
   const probation_end = hd.toISOString().slice(0, 10)
+
+  // employees 테이블에 없으면 자동 추가
+  const existing = await c.env.DB.prepare(
+    `SELECT emp_id FROM employees WHERE emp_id = ?`
+  ).bind(emp_id).first()
+
+  if (!existing) {
+    await c.env.DB.prepare(`
+      INSERT INTO employees (emp_id, name, department, position, email, password)
+      VALUES (?, ?, ?, ?, ?, ?)
+    `).bind(emp_id, name, dept || '', position || '', email || '', emp_id).run()
+  }
 
   const result = await c.env.DB.prepare(`
     INSERT INTO onboarding_employees (emp_id, hire_date, probation_end, emp_type, notes)
@@ -971,6 +983,6 @@ app.get('/api/onboarding/resources/:id/download', async (c) => {
   ).bind(id).first()
   if (!row) return err('자료를 찾을 수 없습니다', 404)
   return ok({ file_name: (row as any).file_name, file_data: (row as any).file_data })
-})
+
 
 export default app

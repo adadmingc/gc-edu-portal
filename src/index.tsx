@@ -804,5 +804,173 @@ app.post('/api/storage/clear-files', async (c) => {
 // 헬스체크
 // ══════════════════════════════════════
 app.get('/api/health', (c) => c.json({ ok: true, service: '지씨 교육 포털', time: new Date().toISOString() }))
+// ═══════════════════════════════════════════════════════════
+// 온보딩 API — src/index.tsx 맨 아래 app.fire() 바로 위에 추가
+// ═══════════════════════════════════════════════════════════
+
+// ── 체크리스트 항목 목록 ─────────────────────────────────
+app.get('/api/onboarding/checklist-items', async (c) => {
+  const { results } = await c.env.DB.prepare(
+    `SELECT * FROM onboarding_checklist_items WHERE is_active=1 ORDER BY sort_order`
+  ).all()
+  return ok(results)
+})
+
+// ── 온보딩 직원 목록 (관리자) ────────────────────────────
+app.get('/api/onboarding/employees', async (c) => {
+  const { results } = await c.env.DB.prepare(`
+    SELECT
+      oe.id, oe.emp_id, oe.hire_date, oe.probation_end,
+      oe.emp_type, oe.status, oe.converted_at, oe.notes,
+      e.name, e.department, e.position,
+      COUNT(op.id)                                          AS total_items,
+      SUM(CASE WHEN op.is_done=1 THEN 1 ELSE 0 END)        AS done_items,
+      CAST(julianday(oe.probation_end) - julianday('now') AS INTEGER) AS dday
+    FROM onboarding_employees oe
+    JOIN employees e ON e.emp_id = oe.emp_id
+    LEFT JOIN onboarding_progress op ON op.onboarding_id = oe.id
+    WHERE oe.status = 'active'
+    GROUP BY oe.id
+    ORDER BY oe.hire_date DESC
+  `).all()
+  return ok(results)
+})
+
+// ── 온보딩 직원 1명 상세 + 진행 상황 ────────────────────
+app.get('/api/onboarding/employees/:id', async (c) => {
+  const id = c.req.param('id')
+  const emp = await c.env.DB.prepare(`
+    SELECT oe.*, e.name, e.department, e.position, e.email
+    FROM onboarding_employees oe
+    JOIN employees e ON e.emp_id = oe.emp_id
+    WHERE oe.id = ?
+  `).bind(id).first()
+  if (!emp) return err('온보딩 직원을 찾을 수 없습니다', 404)
+
+  const { results: progress } = await c.env.DB.prepare(`
+    SELECT op.*, ci.group_name, ci.item_name, ci.sort_order
+    FROM onboarding_progress op
+    JOIN onboarding_checklist_items ci ON ci.id = op.item_id
+    WHERE op.onboarding_id = ?
+    ORDER BY ci.sort_order
+  `).bind(id).all()
+
+  return ok({ ...emp, progress })
+})
+
+// ── 온보딩 직원 등록 ─────────────────────────────────────
+app.post('/api/onboarding/employees', async (c) => {
+  const { emp_id, hire_date, emp_type, notes } = await c.req.json()
+  if (!emp_id || !hire_date) return err('직원 ID와 입사일은 필수입니다')
+
+  // 수습 만료일 계산 (입사일 + 90일)
+  const hd = new Date(hire_date)
+  hd.setDate(hd.getDate() + 90)
+  const probation_end = hd.toISOString().slice(0, 10)
+
+  const result = await c.env.DB.prepare(`
+    INSERT INTO onboarding_employees (emp_id, hire_date, probation_end, emp_type, notes)
+    VALUES (?, ?, ?, ?, ?)
+  `).bind(emp_id, hire_date, probation_end, emp_type || '정규직', notes || '').run()
+
+  const newId = result.meta.last_row_id
+
+  // 체크리스트 항목 자동 생성
+  const { results: items } = await c.env.DB.prepare(
+    `SELECT id FROM onboarding_checklist_items WHERE is_active=1`
+  ).all()
+
+  for (const item of items as any[]) {
+    await c.env.DB.prepare(`
+      INSERT OR IGNORE INTO onboarding_progress (onboarding_id, item_id)
+      VALUES (?, ?)
+    `).bind(newId, item.id).run()
+  }
+
+  return ok({ id: newId, probation_end })
+})
+
+// ── 체크 항목 완료/미완료 토글 ───────────────────────────
+app.put('/api/onboarding/progress/:onboardingId/:itemId', async (c) => {
+  const { onboardingId, itemId } = c.req.param()
+  const { is_done, memo } = await c.req.json()
+  const done_at = is_done ? new Date().toISOString().slice(0, 10) : null
+
+  await c.env.DB.prepare(`
+    INSERT INTO onboarding_progress (onboarding_id, item_id, is_done, done_at, memo)
+    VALUES (?, ?, ?, ?, ?)
+    ON CONFLICT(onboarding_id, item_id) DO UPDATE SET
+      is_done = excluded.is_done,
+      done_at = excluded.done_at,
+      memo    = excluded.memo
+  `).bind(onboardingId, itemId, is_done ? 1 : 0, done_at, memo || '').run()
+
+  return ok({ updated: true })
+})
+
+// ── 수습 전환 처리 ───────────────────────────────────────
+app.put('/api/onboarding/employees/:id/convert', async (c) => {
+  const id = c.req.param('id')
+  const today = new Date().toISOString().slice(0, 10)
+  await c.env.DB.prepare(`
+    UPDATE onboarding_employees
+    SET status='converted', converted_at=?, updated_at=CURRENT_TIMESTAMP
+    WHERE id=?
+  `).bind(today, id).run()
+  return ok({ converted: true, converted_at: today })
+})
+
+// ── 수습 D-20 알림 대상 조회 (Apps Script 트리거용) ──────
+app.get('/api/onboarding/reminders', async (c) => {
+  const { results } = await c.env.DB.prepare(`
+    SELECT oe.id, oe.emp_id, oe.probation_end, oe.emp_type,
+           e.name, e.email,
+           CAST(julianday(oe.probation_end) - julianday('now') AS INTEGER) AS dday
+    FROM onboarding_employees oe
+    JOIN employees e ON e.emp_id = oe.emp_id
+    WHERE oe.status = 'active'
+      AND CAST(julianday(oe.probation_end) - julianday('now') AS INTEGER) = 20
+  `).all()
+  return ok(results)
+})
+
+// ── 입사 안내자료 목록 ───────────────────────────────────
+app.get('/api/onboarding/resources', async (c) => {
+  const { results } = await c.env.DB.prepare(
+    `SELECT id, title, resource_type, file_name, link_url, description, sort_order
+     FROM onboarding_resources WHERE is_active=1 ORDER BY sort_order`
+  ).all()
+  return ok(results)
+})
+
+// ── 입사 안내자료 등록 (관리자) ──────────────────────────
+app.post('/api/onboarding/resources', async (c) => {
+  const { title, resource_type, file_name, file_data, link_url, description, sort_order } = await c.req.json()
+  if (!title) return err('제목은 필수입니다')
+  await c.env.DB.prepare(`
+    INSERT INTO onboarding_resources (title, resource_type, file_name, file_data, link_url, description, sort_order)
+    VALUES (?, ?, ?, ?, ?, ?, ?)
+  `).bind(title, resource_type || 'file', file_name || '', file_data || '', link_url || '', description || '', sort_order || 0).run()
+  return ok({ created: true })
+})
+
+// ── 입사 안내자료 삭제 (관리자) ──────────────────────────
+app.delete('/api/onboarding/resources/:id', async (c) => {
+  const id = c.req.param('id')
+  await c.env.DB.prepare(
+    `UPDATE onboarding_resources SET is_active=0 WHERE id=?`
+  ).bind(id).run()
+  return ok({ deleted: true })
+})
+
+// ── 안내자료 파일 다운로드 ────────────────────────────────
+app.get('/api/onboarding/resources/:id/download', async (c) => {
+  const id = c.req.param('id')
+  const row = await c.env.DB.prepare(
+    `SELECT file_name, file_data FROM onboarding_resources WHERE id=? AND is_active=1`
+  ).bind(id).first()
+  if (!row) return err('자료를 찾을 수 없습니다', 404)
+  return ok({ file_name: (row as any).file_name, file_data: (row as any).file_data })
+})
 
 export default app

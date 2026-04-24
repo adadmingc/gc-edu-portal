@@ -980,6 +980,6 @@ app.get('/api/onboarding/resources/:id/download', async (c) => {
   ).bind(id).first()
   if (!row) return err('자료를 찾을 수 없습니다', 404)
   return ok({ file_name: (row as any).file_name, file_data: (row as any).file_data })
-
+})
 
 export default app

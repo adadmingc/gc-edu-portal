@@ -2573,6 +2573,25 @@ function renderAdminDashboard() { renderOverview(); }
 </script>
 <script>
 /* index */
+  function goOnboarding() {
+  const s = sessionStorage.getItem('edu_current_user') || localStorage.getItem('edu_current_user');
+  if (s) {
+    const user = JSON.parse(s);
+    if (user.type === 'employee') { window.location.href = 'onboarding.html'; return; }
+  }
+  localStorage.setItem('edu_login_redirect', 'onboarding.html');
+  window.location.href = 'employee-login.html';
+}
+
+function goAdminOnboarding() {
+  const s = sessionStorage.getItem('edu_current_user') || localStorage.getItem('edu_current_user');
+  if (s) {
+    const user = JSON.parse(s);
+    if (user.type === 'admin' || user.type === 'sub_admin') { window.location.href = 'admin-onboarding.html'; return; }
+  }
+  localStorage.setItem('edu_login_redirect', 'admin-onboarding.html');
+  window.location.href = 'admin-login.html';
+}
 </script>
 </body>
 </html>

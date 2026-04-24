@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>관리자 로그인 — GC 교육포털</title>
-<script src="/static/api.js"></script>
+
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:'맑은 고딕',sans-serif;background:#1a2744;min-height:100vh;display:flex;align-items:center;justify-content:center}
@@ -84,22 +84,26 @@ async function adminLogin() {
   errEl.style.display = 'none';
   if (!pw) { errEl.style.display='block'; errEl.textContent='비밀번호를 입력해주세요.'; return; }
 
-  const res = await api('/api/auth/admin', {
-    method: 'POST',
-    headers: {'Content-Type':'application/json'},
-    body: JSON.stringify({password: pw})
-  });
-
-  if (res.ok) {
-    const session = {type:'admin', name:'관리자'};
-    sessionStorage.setItem('edu_current_user', JSON.stringify(session));
-    localStorage.setItem('edu_current_user', JSON.stringify(session));
-    // 이전 페이지로 돌아가거나 admin.html로
-    const redirect = new URLSearchParams(location.search).get('redirect') || '/admin.html';
-    location.href = redirect;
-  } else {
+  try {
+    const res = await fetch('/api/auth/admin', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({password: pw})
+    });
+    const data = await res.json();
+    if (data.ok) {
+      const session = {type:'admin', name:'관리자'};
+      sessionStorage.setItem('edu_current_user', JSON.stringify(session));
+      localStorage.setItem('edu_current_user', JSON.stringify(session));
+      const redirect = new URLSearchParams(location.search).get('redirect') || '/admin.html';
+      location.href = redirect;
+    } else {
+      errEl.style.display = 'block';
+      errEl.textContent = '비밀번호가 올바르지 않습니다.';
+    }
+  } catch(e) {
     errEl.style.display = 'block';
-    errEl.textContent = '비밀번호가 올바르지 않습니다.';
+    errEl.textContent = '서버 연결 오류. 잠시 후 다시 시도해주세요.';
   }
 }
 
@@ -110,19 +114,25 @@ async function subLogin() {
   errEl.style.display = 'none';
   if (!username || !password) { errEl.style.display='block'; errEl.textContent='아이디와 비밀번호를 입력해주세요.'; return; }
 
-  const res = await api('/api/auth/sub-admin', {
-    method: 'POST',
-    headers: {'Content-Type':'application/json'},
-    body: JSON.stringify({username, password})
-  });
-
-  if (res.ok) {
-    const session = {...res.data, type:'sub_admin'};
-    sessionStorage.setItem('edu_current_user', JSON.stringify(session));
-    localStorage.setItem('edu_current_user', JSON.stringify(session));
-    location.href = '/admin.html';
-  } else {
+  try {
+    const res = await fetch('/api/auth/sub-admin', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({username, password})
+    });
+    const data = await res.json();
+    if (data.ok) {
+      const session = {...data.data, type:'sub_admin'};
+      sessionStorage.setItem('edu_current_user', JSON.stringify(session));
+      localStorage.setItem('edu_current_user', JSON.stringify(session));
+      location.href = '/admin.html';
+    } else {
+      errEl.style.display = 'block';
+      errEl.textContent = '아이디 또는 비밀번호가 올바르지 않습니다.';
+    }
+  } catch(e) {
     errEl.style.display = 'block';
+    errEl.textContent = '서버 연결 오류. 잠시 후 다시 시도해주세요.';
   }
 }
 </script>

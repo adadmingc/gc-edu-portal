@@ -2584,7 +2584,7 @@ function renderAdminDashboard() { renderOverview(); }
 }
 
 function goAdminOnboarding() {
-  const s = sessionStorage.getItem('edu_current_user') || localStorage.getItem('edu_current_user');
+  const s = sessionStorage.getItem('edu_current_user');
   if (s) {
     const user = JSON.parse(s);
     if (user.type === 'admin' || user.type === 'sub_admin') { window.location.href = 'admin-onboarding.html'; return; }

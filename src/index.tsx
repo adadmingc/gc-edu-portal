@@ -810,13 +810,11 @@ app.get('/api/health', (c) => c.json({ ok: true, service: '지씨 교육 포털'
 
 // ── 체크리스트 항목 목록 ─────────────────────────────────
 app.get('/api/onboarding/checklist-items', async (c) => {
-  const { results } = await c.env.DB.prepare(
-    const admin = c.req.query('all')
+  const admin = c.req.query('all')
   const { results } = await c.env.DB.prepare(
     admin
       ? `SELECT * FROM onboarding_checklist_items ORDER BY sort_order`
       : `SELECT * FROM onboarding_checklist_items WHERE is_active=1 ORDER BY sort_order`
-  ).all()
   ).all()
   return ok(results)
 })

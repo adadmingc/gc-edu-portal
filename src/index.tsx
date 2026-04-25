@@ -811,18 +811,50 @@ app.get('/api/health', (c) => c.json({ ok: true, service: '지씨 교육 포털'
 // ── 체크리스트 항목 목록 ─────────────────────────────────
 app.get('/api/onboarding/checklist-items', async (c) => {
   const { results } = await c.env.DB.prepare(
-    `SELECT * FROM onboarding_checklist_items WHERE is_active=1 ORDER BY sort_order`
+    const admin = c.req.query('all')
+  const { results } = await c.env.DB.prepare(
+    admin
+      ? `SELECT * FROM onboarding_checklist_items ORDER BY sort_order`
+      : `SELECT * FROM onboarding_checklist_items WHERE is_active=1 ORDER BY sort_order`
+  ).all()
   ).all()
   return ok(results)
 })
+app.post('/api/onboarding/checklist-items', async (c) => {
+  const { group_name, item_name, sort_order } = await c.req.json()
+  if (!group_name || !item_name) return err('그룹명과 항목명은 필수입니다')
+  const r = await c.env.DB.prepare(
+    `INSERT INTO onboarding_checklist_items (group_name, item_name, sort_order) VALUES (?, ?, ?)`
+  ).bind(group_name, item_name, sort_order || 0).run()
+  return ok({ id: r.meta.last_row_id })
+})
 
+app.put('/api/onboarding/checklist-items/:id', async (c) => {
+  const id = c.req.param('id')
+  const { group_name, item_name, sort_order } = await c.req.json()
+  await c.env.DB.prepare(
+    `UPDATE onboarding_checklist_items SET group_name=?, item_name=?, sort_order=? WHERE id=?`
+  ).bind(group_name, item_name, sort_order || 0, id).run()
+  return ok({ updated: true })
+})
+
+app.put('/api/onboarding/checklist-items/:id/toggle', async (c) => {
+  const id = c.req.param('id')
+  const { is_active } = await c.req.json()
+  await c.env.DB.prepare(
+    `UPDATE onboarding_checklist_items SET is_active=? WHERE id=?`
+  ).bind(is_active, id).run()
+  return ok({ updated: true })
+})
 // ── 온보딩 직원 목록 (관리자) ────────────────────────────
 app.get('/api/onboarding/employees', async (c) => {
   const { results } = await c.env.DB.prepare(`
     SELECT
       oe.id, oe.emp_id, oe.hire_date, oe.probation_end,
       oe.emp_type, oe.status, oe.converted_at, oe.notes,
-      e.name, e.department, e.position,
+      e.name,
+      COALESCE(e.department, e.dept, '') AS department,
+      COALESCE(e.position, e.rank, '') AS position,
       COUNT(op.id)                                          AS total_items,
       SUM(CASE WHEN op.is_done=1 THEN 1 ELSE 0 END)        AS done_items,
       CAST(julianday(oe.probation_end) - julianday('now') AS INTEGER) AS dday

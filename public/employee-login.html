@@ -1364,7 +1364,9 @@ if (storedRedirect) {
   localStorage.removeItem('edu_login_redirect');
   window.location.href = storedRedirect;
 } else {
-  window.location.href = 'employee.html';
+  const _r = localStorage.getItem('edu_login_redirect');
+if (_r) { localStorage.removeItem('edu_login_redirect'); window.location.href = _r; }
+else { window.location.href = 'employee.html'; }
 }
   } else if (r.error && r.error.includes('비밀번호')) {
     // 비밀번호 필요 → 비밀번호 필드 표시

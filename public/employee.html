@@ -2982,8 +2982,10 @@ function renderAdminDashboard() { renderOverview(); }
 <script>
 
 document.addEventListener('DOMContentLoaded', async () => {
-  const user = JSON.parse(sessionStorage.getItem('edu_current_user') || localStorage.getItem('edu_current_user') || 'null');
-  if (!user || user.type !== 'employee') {
+const ssUser = JSON.parse(sessionStorage.getItem('edu_current_user') || 'null');
+  const lsUser = JSON.parse(localStorage.getItem('edu_current_user') || 'null');
+  const user = (ssUser?.type === 'employee' ? ssUser : null) || (lsUser?.type === 'employee' ? lsUser : null);
+  if (!user) {
     window.location.href = 'employee-login.html';
     return;
   }

@@ -946,7 +946,17 @@ app.put('/api/onboarding/progress/:onboardingId/:itemId', async (c) => {
 
   return ok({ updated: true })
 })
-
+app.put('/api/onboarding/employees/:id', async (c) => {
+  const id = c.req.param('id')
+  const { hire_date, probation_end, emp_type, notes } = await c.req.json()
+  if (!hire_date || !probation_end) return err('입사일과 수습 만료일은 필수입니다')
+  await c.env.DB.prepare(`
+    UPDATE onboarding_employees
+    SET hire_date=?, probation_end=?, emp_type=?, notes=?, updated_at=CURRENT_TIMESTAMP
+    WHERE id=?
+  `).bind(hire_date, probation_end, emp_type || '정규직', notes || '', id).run()
+  return ok({ updated: true })
+})
 // ── 수습 전환 처리 ───────────────────────────────────────
 app.put('/api/onboarding/employees/:id/convert', async (c) => {
   const id = c.req.param('id')

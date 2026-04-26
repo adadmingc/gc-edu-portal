@@ -2982,7 +2982,7 @@ function renderAdminDashboard() { renderOverview(); }
 <script>
 
 document.addEventListener('DOMContentLoaded', async () => {
-  const user const user = JSON.parse(sessionStorage.getItem('edu_current_user') || localStorage.getItem('edu_current_user') || 'null');
+  const user = JSON.parse(sessionStorage.getItem('edu_current_user') || localStorage.getItem('edu_current_user') || 'null');
   if (!user || user.type !== 'employee') {
     window.location.href = 'employee-login.html';
     return;

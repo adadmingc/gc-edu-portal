@@ -1394,7 +1394,9 @@ async function empLogin() {
   if (btn) { btn.disabled = false; btn.textContent = '로그인'; }
   if (r.ok) {
     if (errEl) errEl.style.display = 'none';
-    sessionStorage.setItem('edu_current_user', JSON.stringify({ type: 'employee', emp: r.data.emp }));
+    const _session = JSON.stringify({ type: 'employee', emp: r.data.emp });
+      sessionStorage.setItem('edu_current_user', _session);
+      localStorage.setItem('edu_current_user', _session);
     localStorage.setItem('edu_current_user', JSON.stringify({ type: 'employee', emp: r.data.emp }));
     const _r = localStorage.getItem('edu_login_redirect');
 if (_r) { localStorage.removeItem('edu_login_redirect'); window.location.href = _r; }

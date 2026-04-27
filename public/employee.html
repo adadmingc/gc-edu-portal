@@ -1556,7 +1556,8 @@ function go(viewId) {
 
 function logout() {
   currentUser=null; pendingFiles={};
-  sessionStorage.removeItem('edu_current_user');
+sessionStorage.removeItem('edu_current_user');
+  localStorage.removeItem('edu_current_user');
   window.location.href='index.html';
 }
 
@@ -1630,10 +1631,12 @@ function showPanel(id, el) {
 
 async function renderEmpPortal(emp) {
   const empId = emp.emp_id || emp.empId;
-  const [subs, assignedCatIds] = await Promise.all([
+let [subs, assignedCatIds] = await Promise.all([
     apiGetSubmissions(empId),
     apiGetAssignments(empId),
   ]);
+  if (!Array.isArray(subs)) subs = [];
+  if (!Array.isArray(assignedCatIds)) assignedCatIds = [];
 
   // 배정된 교육만 필터 (배정 없으면 전체 표시)
   const myCats = assignedCatIds.length > 0
@@ -2982,10 +2985,16 @@ function renderAdminDashboard() { renderOverview(); }
 <script>
 
 document.addEventListener('DOMContentLoaded', async () => {
-const ssUser = JSON.parse(sessionStorage.getItem('edu_current_user') || 'null');
-  const lsUser = JSON.parse(localStorage.getItem('edu_current_user') || 'null');
-  const user = (ssUser?.type === 'employee' ? ssUser : null) || (lsUser?.type === 'employee' ? lsUser : null);
+let user = null;
+  try {
+    const _ss = sessionStorage.getItem('edu_current_user');
+    const _ls = localStorage.getItem('edu_current_user');
+    const _p = JSON.parse(_ss || _ls || 'null');
+    if (_p && _p.type === 'employee') user = _p;
+  } catch(e) {}
   if (!user) {
+    sessionStorage.removeItem('edu_current_user');
+    localStorage.removeItem('edu_current_user');
     window.location.href = 'employee-login.html';
     return;
   }

@@ -1630,11 +1630,16 @@ function showPanel(id, el) {
 
 
 async function renderEmpPortal(emp) {
-  const empId = emp.emp_id || emp.empId;
-let [subs, assignedCatIds] = await Promise.all([
-    apiGetSubmissions(empId),
-    apiGetAssignments(empId),
-  ]);
+const empId = emp.emp_id || emp.empId;
+  let subs = [], assignedCatIds = [];
+  try {
+    [subs, assignedCatIds] = await Promise.all([
+      apiGetSubmissions(empId),
+      apiGetAssignments(empId),
+    ]);
+    if (!Array.isArray(subs)) subs = [];
+    if (!Array.isArray(assignedCatIds)) assignedCatIds = [];
+  } catch(e) { console.error('data load error:', e); }
   if (!Array.isArray(subs)) subs = [];
   if (!Array.isArray(assignedCatIds)) assignedCatIds = [];
 
@@ -1809,8 +1814,8 @@ async function submitSub(empId, catId) {
   delete pendingSubFiles[catId];
   closeSubForm(catId);
   showToast('📤 이수증이 제출되었습니다');
-  const user = JSON.parse(sessionStorage.getItem('edu_current_user') || localStorage.getItem('edu_current_user') || 'null');
-  if (user?.emp) renderEmpPortal(user.emp);
+  const _u = JSON.parse(sessionStorage.getItem('edu_current_user') || localStorage.getItem('edu_current_user')||'null');
+  if (_u?.emp) renderEmpPortal(_u.emp);
 }
 
 async function deleteSubmission(id, empId, catId) {
@@ -1818,8 +1823,8 @@ async function deleteSubmission(id, empId, catId) {
   const r = await apiDeleteSubmission(id);
   if (!r.ok) { showToast('⚠️ 삭제 실패'); return; }
   showToast('🗑️ 삭제되었습니다');
-  const user = JSON.parse(sessionStorage.getItem('edu_current_user') || localStorage.getItem('edu_current_user') || 'null');
-  if (user?.emp) renderEmpPortal(user.emp);
+  const _u2 = JSON.parse(sessionStorage.getItem('edu_current_user') || localStorage.getItem('edu_current_user')||'null');
+  if (_u2?.emp) renderEmpPortal(_u2.emp);
 }
 
 async function viewSubFile(id) {

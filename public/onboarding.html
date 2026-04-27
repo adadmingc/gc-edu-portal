@@ -64,23 +64,22 @@ body{font-family:'맑은 고딕',sans-serif;background:#f4f6fb;color:#1a202c;fon
 <div class="container" id="main"></div>
 <script>
 async function init() {
-  var s = JSON.parse(sessionStorage.getItem('edu_current_user') || localStorage.getItem('edu_current_user') || 'null');
+  var s = null;
+  try {
+    var _raw = sessionStorage.getItem('edu_current_user') || localStorage.getItem('edu_current_user');
+    s = _raw ? JSON.parse(_raw) : null;
+  } catch(e) { s = null; }
   if (!s) { location.href = '/employee-login.html'; return; }
-
-  // 세션 구조 다양한 경우 처리
   var empId, empName;
   if (s.type === 'employee') {
-    // { type:'employee', emp:{emp_id:'0500', name:'김영빈'} } 구조
     empId   = s.emp_id || s.empId || (s.emp && (s.emp.emp_id || s.emp.empId));
     empName = s.name   || (s.emp && s.emp.name) || '직원';
   } else if (s.type === 'admin' || s.type === 'sub_admin') {
-    // 관리자도 접근 허용 (테스트용)
     empId   = s.emp_id || (s.emp && s.emp.emp_id) || null;
     empName = s.name || '관리자';
   } else {
     location.href = '/employee-login.html'; return;
   }
-
   if (!empId) { location.href = '/employee-login.html'; return; }
 
   var r1 = await fetch('/api/onboarding/employees').then(function(r){return r.json();});

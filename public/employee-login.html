@@ -1356,16 +1356,29 @@ async function checkEmpPw() {
   // 비밀번호 설정 여부 확인 (임시: 그냥 로그인 시도)
   const r = await apiEmpLogin(name, id, '');
   if (btn) { btn.disabled = false; }
-  if (r.ok) {
+if (r.ok) {
     // 비밀번호 없이 로그인 성공
     if (errEl) errEl.style.display = 'none';
-const storedRedirect = localStorage.getItem('edu_login_redirect');
-if (storedRedirect) {
-  localStorage.removeItem('edu_login_redirect');
-  window.location.href = storedRedirect;
-} else {
-  window.location.href = 'employee.html';
-}
+
+    const emp = r.data?.emp || r.emp || {};
+    const sessionUser = {
+      type: 'employee',
+      emp: {
+        ...emp,
+        emp_id: emp.emp_id || emp.empId || id
+      }
+    };
+    const sessionText = JSON.stringify(sessionUser);
+    sessionStorage.setItem('edu_current_user', sessionText);
+    localStorage.setItem('edu_current_user', sessionText);
+
+    const storedRedirect = localStorage.getItem('edu_login_redirect');
+    if (storedRedirect) {
+      localStorage.removeItem('edu_login_redirect');
+      window.location.href = storedRedirect;
+    } else {
+      window.location.href = 'employee.html';
+    }
   } else if (r.error && r.error.includes('비밀번호')) {
     // 비밀번호 필요 → 비밀번호 필드 표시
     if (pwField) pwField.style.display = 'block';

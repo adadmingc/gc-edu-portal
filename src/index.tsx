@@ -94,6 +94,7 @@ const { emp_password, password, ...empSafe } = emp as Record<string, unknown>
   return ok({ type: 'employee', emp: empSafe, requiresPw: !!storedPw })
 })
 
+
 // 직원 비밀번호 설정/초기화 (관리자)
 app.put('/api/employees/:empId/password', async (c) => {
   const empId = c.req.param('empId')

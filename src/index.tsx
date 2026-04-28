@@ -808,7 +808,7 @@ app.get('/api/health', (c) => c.json({ ok: true, service: '지씨 교육 포털'
 // 온보딩 API — src/index.tsx 맨 아래 app.fire() 바로 위에 추가
 // ═══════════════════════════════════════════════════════════
 
-// ── 체크리스트 항목 목록 ─────────────────────────────────
+// ── 체크리스트 항목 목록 (전체, 관리자용) ────────────────
 app.get('/api/onboarding/checklist-items', async (c) => {
   const admin = c.req.query('all')
   const { results } = await c.env.DB.prepare(
@@ -818,6 +818,8 @@ app.get('/api/onboarding/checklist-items', async (c) => {
   ).all()
   return ok(results)
 })
+
+// ── 체크리스트 항목 추가 ──────────────────────────────────
 app.post('/api/onboarding/checklist-items', async (c) => {
   const { group_name, item_name, sort_order } = await c.req.json()
   if (!group_name || !item_name) return err('그룹명과 항목명은 필수입니다')
@@ -827,6 +829,7 @@ app.post('/api/onboarding/checklist-items', async (c) => {
   return ok({ id: r.meta.last_row_id })
 })
 
+// ── 체크리스트 항목 수정 ──────────────────────────────────
 app.put('/api/onboarding/checklist-items/:id', async (c) => {
   const id = c.req.param('id')
   const { group_name, item_name, sort_order } = await c.req.json()
@@ -836,6 +839,7 @@ app.put('/api/onboarding/checklist-items/:id', async (c) => {
   return ok({ updated: true })
 })
 
+// ── 체크리스트 항목 활성/비활성 토글 ─────────────────────
 app.put('/api/onboarding/checklist-items/:id/toggle', async (c) => {
   const id = c.req.param('id')
   const { is_active } = await c.req.json()
@@ -844,6 +848,7 @@ app.put('/api/onboarding/checklist-items/:id/toggle', async (c) => {
   ).bind(is_active, id).run()
   return ok({ updated: true })
 })
+
 // ── 온보딩 직원 목록 (관리자) ────────────────────────────
 app.get('/api/onboarding/employees', async (c) => {
   const { results } = await c.env.DB.prepare(`
@@ -890,13 +895,18 @@ app.get('/api/onboarding/employees/:id', async (c) => {
 
 // ── 온보딩 직원 등록 ─────────────────────────────────────
 app.post('/api/onboarding/employees', async (c) => {
-  const { name, emp_id, dept, position, email, hire_date, emp_type, notes } = await c.req.json()
+  const { name, emp_id, dept, position, email, hire_date, probation_end: custom_probation_end, emp_type, notes } = await c.req.json()
   if (!name || !emp_id || !hire_date) return err('성명, 사번, 입사일은 필수입니다')
 
-  const hd = new Date(hire_date)
-  hd.setDate(hd.getDate() + 90)
-  const probation_end = hd.toISOString().slice(0, 10)
+  // 수습 만료일: 직접 입력 값이 있으면 사용, 없으면 입사일 + 3개월 자동 계산
+  let probation_end = custom_probation_end
+  if (!probation_end) {
+    const hd = new Date(hire_date)
+    hd.setMonth(hd.getMonth() + 3)
+    probation_end = hd.toISOString().slice(0, 10)
+  }
 
+  // employees 테이블에 없으면 자동 추가
   const existing = await c.env.DB.prepare(
     `SELECT emp_id FROM employees WHERE emp_id = ?`
   ).bind(emp_id).first()
@@ -915,6 +925,7 @@ app.post('/api/onboarding/employees', async (c) => {
 
   const newId = result.meta.last_row_id
 
+  // 체크리스트 항목 자동 생성
   const { results: items } = await c.env.DB.prepare(
     `SELECT id FROM onboarding_checklist_items WHERE is_active=1`
   ).all()
@@ -946,17 +957,8 @@ app.put('/api/onboarding/progress/:onboardingId/:itemId', async (c) => {
 
   return ok({ updated: true })
 })
-app.put('/api/onboarding/employees/:id', async (c) => {
-  const id = c.req.param('id')
-  const { hire_date, probation_end, emp_type, notes } = await c.req.json()
-  if (!hire_date || !probation_end) return err('입사일과 수습 만료일은 필수입니다')
-  await c.env.DB.prepare(`
-    UPDATE onboarding_employees
-    SET hire_date=?, probation_end=?, emp_type=?, notes=?, updated_at=CURRENT_TIMESTAMP
-    WHERE id=?
-  `).bind(hire_date, probation_end, emp_type || '정규직', notes || '', id).run()
-  return ok({ updated: true })
-})
+
+// ── 온보딩 직원 정보 수정 ────────────────────────────────
 app.put('/api/onboarding/employees/:id', async (c) => {
   const id = c.req.param('id')
   const { hire_date, probation_end, emp_type, notes, welcome_message } = await c.req.json()
@@ -968,6 +970,7 @@ app.put('/api/onboarding/employees/:id', async (c) => {
   `).bind(hire_date, probation_end, emp_type || '정규직', notes || '', welcome_message || '', id).run()
   return ok({ updated: true })
 })
+
 // ── 수습 전환 처리 ───────────────────────────────────────
 app.put('/api/onboarding/employees/:id/convert', async (c) => {
   const id = c.req.param('id')
@@ -1033,4 +1036,26 @@ app.get('/api/onboarding/resources/:id/download', async (c) => {
   return ok({ file_name: (row as any).file_name, file_data: (row as any).file_data })
 })
 
+// ── 입사자 개인 메시지 조회 ──────────────────────────────
+app.get('/api/onboarding/message/:onboardingId', async (c) => {
+  const id = c.req.param('onboardingId')
+  const row = await c.env.DB.prepare(
+    `SELECT message, updated_at FROM onboarding_messages WHERE onboarding_id=?`
+  ).bind(id).first()
+  return ok({ message: (row as any)?.message || '', updated_at: (row as any)?.updated_at || null })
+})
+
+// ── 입사자 개인 메시지 저장/수정 (관리자) ───────────────
+app.put('/api/onboarding/message/:onboardingId', async (c) => {
+  const id = c.req.param('onboardingId')
+  const { message } = await c.req.json()
+  await c.env.DB.prepare(`
+    INSERT INTO onboarding_messages (onboarding_id, message, updated_at)
+    VALUES (?, ?, CURRENT_TIMESTAMP)
+    ON CONFLICT(onboarding_id) DO UPDATE SET
+      message = excluded.message,
+      updated_at = CURRENT_TIMESTAMP
+  `).bind(id, message || '').run()
+  return ok({ saved: true })
+})
 export default app

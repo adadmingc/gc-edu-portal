@@ -75,7 +75,7 @@ app.post('/api/auth/employee', async (c) => {
   }
 
   // 응답에서 비밀번호 제거
-  const { emp_password, ...empSafe } = emp as Record<string, unknown>
+const { emp_password, password, ...empSafe } = emp as Record<string, unknown>
   return ok({ type: 'employee', emp: empSafe, requiresPw: !!storedPw })
 })
 

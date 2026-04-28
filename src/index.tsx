@@ -44,6 +44,21 @@ function err(msg: string, status = 400) {
   return Response.json({ ok: false, error: msg }, { status })
 }
 
+// ── API 인증 헬퍼 ──────────────────────────────────────
+function getAdminPw(c: any): string {
+  return c.env?.ADMIN_PW ?? 'hr2026'
+}
+
+async function verifyAdmin(c: any): Promise<boolean> {
+  const token = c.req.header('X-Admin-Token') || ''
+  if (!token) return false
+  const row = await c.env.DB.prepare(
+    `SELECT value FROM settings WHERE key='admin_pw'`
+  ).first<{ value: string }>()
+  const pw = row?.value ?? 'hr2026'
+  return token === pw
+}
+
 // ══════════════════════════════════════
 // 인증
 // ══════════════════════════════════════
@@ -119,13 +134,14 @@ app.post('/api/auth/change-pw', async (c) => {
 // 전체 목록
 app.get('/api/employees', async (c) => {
   const { results } = await c.env.DB.prepare(
-    `SELECT * FROM employees ORDER BY created_at DESC`
+    `SELECT id, name, emp_id, dept, rank, join_date, created_at, department, position, email FROM employees ORDER BY created_at DESC`
   ).all()
   return ok(results)
 })
 
 // 추가
 app.post('/api/employees', async (c) => {
+  if (!await verifyAdmin(c)) return err('관리자 인증이 필요합니다', 401)
   const { name, empId, dept, rank, joinDate } = await c.req.json()
   if (!name || !empId) return err('이름과 사번은 필수입니다')
   try {

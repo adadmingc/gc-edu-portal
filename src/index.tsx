@@ -90,7 +90,10 @@ app.post('/api/auth/employee', async (c) => {
   }
 
   // 응답에서 비밀번호 제거
-const { emp_password, password, ...empSafe } = emp as Record<string, unknown>
+const empRecord = emp as Record<string, unknown>
+  delete empRecord['emp_password']
+  delete empRecord['password']
+  const empSafe = empRecord
   return ok({ type: 'employee', emp: empSafe, requiresPw: !!storedPw })
 })
 

@@ -1630,7 +1630,6 @@ function showPanel(id, el) {
 
 
 async function renderEmpPortal(emp) {
-  try {
   const empId = emp.emp_id || emp.empId;
 
   // ── 입사일 체크: 온보딩 등록된 직원은 입사일 이후에만 접근 가능 ──
@@ -1696,6 +1695,7 @@ async function renderEmpPortal(emp) {
   await renderEduNoticeSection();
   await renderEmpGuidelineResources();
   await renderEmpEduDocs();
+  } catch(e) { console.error('portal render error:', e); }
 }
 
 function buildCard(emp,c,r,i,subs) {

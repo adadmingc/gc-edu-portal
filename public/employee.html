@@ -1694,8 +1694,7 @@ async function renderEmpPortal(emp) {
   // 방침 탭 자료도 항상 갱신
   await renderEduNoticeSection();
   await renderEmpGuidelineResources();
-  await renderEmpEduDocs();
-  } catch(e) { console.error('portal render error:', e); }
+ await renderEmpEduDocs();
 }
 
 function buildCard(emp,c,r,i,subs) {

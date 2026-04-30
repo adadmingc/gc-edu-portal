@@ -1657,7 +1657,7 @@ async function renderEmpPortal(emp) {
       }
     }
   } catch(e) { /* 온보딩 미등록 직원은 그냥 통과 */ }
-
+ 
   let subs = [], assignedCatIds = [];
   try {
     [subs, assignedCatIds] = await Promise.all([

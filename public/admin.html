@@ -4525,7 +4525,8 @@ function syncMobileTab(el) {
 // ── AI 교육 탐색 ────────────────────────────────────────
 async function loadEduSearchSettings() {
   try {
-    const r = await api('/api/edu-search-settings');
+    const res = await fetch('/api/edu-search-settings');
+    const r = await res.json();
     if (!r.ok) return;
     const s = r.data;
     ['site_hrd','site_kosha','site_moel','site_extra',
@@ -4546,7 +4547,8 @@ async function saveEduSearchSettings() {
     const el = document.getElementById('s-' + key);
     if (el) body[key] = el.checked ? 'true' : 'false';
   });
-  const r = await api('/api/edu-search-settings', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body) });
+const res = await fetch('/api/edu-search-settings', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body) });
+  const r = await res.json();
   if (r.ok) showToast('✅ 설정이 저장됐습니다');
 }
 
@@ -4554,7 +4556,8 @@ async function loadEduDrafts() {
   const el = document.getElementById('ai-edu-drafts-list');
   if (!el) return;
   el.innerHTML = '<div style="text-align:center;padding:20px;color:#94a3b8">불러오는 중...</div>';
-  const r = await api('/api/edu-drafts');
+const res = await fetch('/api/edu-drafts');
+  const r = await res.json();
   if (!r.ok || !r.data?.length) {
     el.innerHTML = '<div style="text-align:center;padding:40px;color:#94a3b8"><div style="font-size:32px;margin-bottom:8px">🤖</div><div style="font-size:14px">코워크에서 교육 리스트가 자동으로 업데이트됩니다</div><div style="font-size:12px;margin-top:4px">매주 월요일 오전 자동 생성</div></div>';
     return;
@@ -4605,7 +4608,8 @@ async function publishSelectedDrafts() {
   if (!confirm(checks.length + '건을 공지로 게시하시겠습니까?')) return;
   let ok = 0;
   for (const c of checks) {
-    const r = await api('/api/edu-drafts/' + c.dataset.id + '/publish', { method:'POST' });
+    const res = await fetch('/api/edu-drafts/' + c.dataset.id + '/publish', { method:'POST' });
+    const r = await res.json();
     if (r.ok) ok++;
   }
   showToast('✅ ' + ok + '건이 공지로 게시됐습니다');
@@ -4617,7 +4621,7 @@ async function deleteSelectedDrafts() {
   if (!checks.length) { alert('삭제할 항목을 선택해주세요'); return; }
   if (!confirm(checks.length + '건을 삭제하시겠습니까?')) return;
   for (const c of checks) {
-    await api('/api/edu-drafts/' + c.dataset.id, { method:'DELETE' });
+    await fetch('/api/edu-drafts/' + c.dataset.id, { method:'DELETE' });
   }
   showToast('🗑️ 삭제됐습니다');
   loadEduDrafts();

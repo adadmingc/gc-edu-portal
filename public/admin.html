@@ -4623,8 +4623,15 @@ async function deleteSelectedDrafts() {
   loadEduDrafts();
 }
 
-// p-ai-edu 패널 진입 시 데이터 로드
-const _origShowPanel = typeof showPanel === 'function' ? showPanel : null;
+// p-ai-edu 패널 진입 시 데이터 자동 로드
+const _origShowPanel = window.showPanel;
+window.showPanel = function(id, el) {
+  _origShowPanel && _origShowPanel(id, el);
+  if (id === 'p-ai-edu') {
+    loadEduSearchSettings();
+    loadEduDrafts();
+  }
+};
 
 </script>
 </body>

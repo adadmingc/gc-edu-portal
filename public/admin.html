@@ -4631,7 +4631,19 @@ async function deleteSelectedDrafts() {
 document.addEventListener('DOMContentLoaded', function() {
   const _origShowPanel = window.showPanel;
   window.showPanel = function(id, el) {
-    _origShowPanel && _origShowPanel(id, el);
+    // 모든 패널 숨기기
+    document.querySelectorAll('.panel').forEach(p => p.style.display = 'none');
+    // 선택한 패널 보이기
+    const target = document.getElementById(id);
+    if (target) target.style.display = 'block';
+    // 탭 활성화
+    if (el) {
+      document.querySelectorAll('.mat-btn').forEach(b => b.classList.remove('active'));
+      el.classList.add('active');
+    }
+    // 기존 함수도 호출 (혹시 다른 로직 있을 경우 대비)
+    try { _origShowPanel && _origShowPanel(id, el); } catch(e) {}
+    // AI 교육탐색 진입 시 데이터 로드
     if (id === 'p-ai-edu') {
       loadEduSearchSettings();
       loadEduDrafts();

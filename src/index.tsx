@@ -1078,4 +1078,74 @@ app.put('/api/onboarding/message/:onboardingId', async (c) => {
   `).bind(id, message || '').run()
   return ok({ saved: true })
 })
+// ── AI 교육 탐색 — 검색 설정 조회 ──────────────────────
+app.get('/api/edu-search-settings', async (c) => {
+  const { results } = await c.env.DB.prepare(
+    `SELECT key, value FROM edu_search_settings`
+  ).all()
+  const settings: Record<string, string> = {}
+  for (const r of results as any[]) settings[(r as any).key] = (r as any).value
+  return ok(settings)
+})
+
+app.post('/api/edu-search-settings', async (c) => {
+  const body = await c.req.json()
+  for (const [key, value] of Object.entries(body)) {
+    await c.env.DB.prepare(
+      `INSERT INTO edu_search_settings (key, value) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value=excluded.value, updated_at=datetime('now','localtime')`
+    ).bind(key, value).run()
+  }
+  return ok({ saved: true })
+})
+
+app.get('/api/edu-drafts', async (c) => {
+  const { results } = await c.env.DB.prepare(
+    `SELECT * FROM edu_notice_drafts ORDER BY created_at DESC`
+  ).all()
+  return ok(results)
+})
+
+app.post('/api/edu-drafts', async (c) => {
+  const token = c.req.header('X-Cowork-Key') || ''
+  const validToken = (c.env as any).COWORK_API_KEY || 'gc-edu-2026'
+  if (token !== validToken) return err('인증 실패', 401)
+  const body = await c.req.json()
+  const items = Array.isArray(body) ? body : [body]
+  let inserted = 0
+  for (const item of items as any[]) {
+    if (!item.title) continue
+    const dup = await c.env.DB.prepare(
+      `SELECT id FROM edu_notice_drafts WHERE title = ? AND created_at > datetime('now','-30 days','localtime')`
+    ).bind(item.title).first()
+    if (dup) continue
+    await c.env.DB.prepare(
+      `INSERT INTO edu_notice_drafts (title, content, category, source_url, source_site, cost, target, period) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
+    ).bind(item.title||'', item.content||item.summary||'', item.category||'general', item.url||'', item.source_site||'', item.cost||'', item.target||'', item.period||'').run()
+    inserted++
+  }
+  return ok({ inserted })
+})
+
+app.post('/api/edu-drafts/:id/publish', async (c) => {
+  const id = c.req.param('id')
+  const draft = await c.env.DB.prepare(
+    `SELECT * FROM edu_notice_drafts WHERE id = ?`
+  ).bind(id).first() as any
+  if (!draft) return err('초안을 찾을 수 없습니다')
+  await c.env.DB.prepare(
+    `INSERT INTO edu_notices (title, content, created_at) VALUES (?, ?, datetime('now','localtime'))`
+  ).bind(draft.title, draft.content).run()
+  await c.env.DB.prepare(
+    `UPDATE edu_notice_drafts SET status='published', published_at=datetime('now','localtime') WHERE id=?`
+  ).bind(id).run()
+  return ok({ published: true })
+})
+
+app.delete('/api/edu-drafts/:id', async (c) => {
+  await c.env.DB.prepare(
+    `DELETE FROM edu_notice_drafts WHERE id = ?`
+  ).bind(c.req.param('id')).run()
+  return ok({ deleted: true })
+})
+
 export default app

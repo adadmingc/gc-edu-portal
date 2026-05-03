@@ -1310,6 +1310,7 @@ tbody tr:hover { background:#f8fafd; }
         <button class="mat-btn" onclick="showPanel('p-file-mgmt',this);syncMobileTab(this)" id="mat-file-mgmt">🗄️ 파일관리</button>
         <button class="mat-btn" onclick="showPanel('p-sub-admin-mgmt',this);syncMobileTab(this)" id="mat-sub-admin-mgmt">👤 부관리자</button>
         <button class="mat-btn" onclick="showPanel('p-settings',this);syncMobileTab(this)">⚙️ 설정</button>
+<button class="mat-btn" onclick="showPanel('p-ai-edu',this);syncMobileTab(this)">🤖 AI교육탐색</button>
       </div>
 
       <div class="admin-main-inner">
@@ -1721,7 +1722,63 @@ tbody tr:hover { background:#f8fafd; }
         </div>
 
         <!-- 설정 -->
-        <div class="panel" id="p-settings">
+        <div class="panel" id="p-ai-edu" style="display:none">
+  <div class="section-card">
+    <div class="section-title">🤖 AI 교육 탐색</div>
+
+    <!-- 검색 설정 -->
+    <div style="background:#f8faff;border:1px solid #e2e8f0;border-radius:10px;padding:20px;margin-bottom:20px">
+      <div style="font-size:14px;font-weight:700;color:#1d4e89;margin-bottom:14px">🔧 검색 설정</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+        <div>
+          <div style="font-size:12px;font-weight:700;color:#64748b;margin-bottom:8px">검색 사이트</div>
+          <label style="display:flex;align-items:center;gap:8px;margin-bottom:6px;font-size:13px"><input type="checkbox" id="s-site_hrd"> HRD-Net (hrd.go.kr)</label>
+          <label style="display:flex;align-items:center;gap:8px;margin-bottom:6px;font-size:13px"><input type="checkbox" id="s-site_kosha"> 안전보건공단 (kosha.or.kr)</label>
+          <label style="display:flex;align-items:center;gap:8px;margin-bottom:6px;font-size:13px"><input type="checkbox" id="s-site_moel"> 고용노동부 (moel.go.kr)</label>
+          <label style="display:flex;align-items:center;gap:8px;font-size:13px"><input type="checkbox" id="s-site_extra"> 기타 관련 사이트 포함</label>
+        </div>
+        <div>
+          <div style="font-size:12px;font-weight:700;color:#64748b;margin-bottom:8px">교육 카테고리</div>
+          <label style="display:flex;align-items:center;gap:8px;margin-bottom:6px;font-size:13px"><input type="checkbox" id="s-cat_legal"> 법정의무교육</label>
+          <label style="display:flex;align-items:center;gap:8px;margin-bottom:6px;font-size:13px"><input type="checkbox" id="s-cat_safety"> 안전보건교육</label>
+          <label style="display:flex;align-items:center;gap:8px;margin-bottom:6px;font-size:13px"><input type="checkbox" id="s-cat_job"> 직무역량교육</label>
+          <label style="display:flex;align-items:center;gap:8px;font-size:13px"><input type="checkbox" id="s-cat_leader"> 리더십교육</label>
+        </div>
+      </div>
+      <div style="margin-top:14px">
+        <div style="font-size:12px;font-weight:700;color:#64748b;margin-bottom:8px">검색 조건</div>
+        <div style="display:flex;flex-wrap:wrap;gap:12px">
+          <label style="display:flex;align-items:center;gap:6px;font-size:13px"><input type="checkbox" id="s-cond_free"> 무료</label>
+          <label style="display:flex;align-items:center;gap:6px;font-size:13px"><input type="checkbox" id="s-cond_supported"> 정부지원</label>
+          <label style="display:flex;align-items:center;gap:6px;font-size:13px"><input type="checkbox" id="s-cond_online"> 온라인</label>
+          <label style="display:flex;align-items:center;gap:6px;font-size:13px"><input type="checkbox" id="s-cond_offline"> 집합교육</label>
+        </div>
+      </div>
+      <div style="margin-top:14px;display:flex;gap:10px">
+        <button class="btn btn-navy" onclick="saveEduSearchSettings()">설정 저장</button>
+      </div>
+    </div>
+
+    <!-- 검색 결과 -->
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+      <div style="font-size:14px;font-weight:700;color:#1d4e89">📋 교육 후보 목록</div>
+      <div style="display:flex;gap:8px">
+        <button class="btn btn-navy" onclick="loadEduDrafts()">🔄 새로고침</button>
+        <button class="btn btn-navy" onclick="publishSelectedDrafts()" style="background:#16a34a">✅ 선택 항목 공지 게시</button>
+        <button class="btn" onclick="deleteSelectedDrafts()" style="background:#dc2626;color:#fff;padding:8px 14px;border-radius:6px;border:none;cursor:pointer;font-size:13px">🗑️ 선택 삭제</button>
+      </div>
+    </div>
+    <div id="ai-edu-drafts-list">
+      <div style="text-align:center;padding:40px;color:#94a3b8">
+        <div style="font-size:32px;margin-bottom:8px">🤖</div>
+        <div style="font-size:14px">코워크에서 교육 리스트가 자동으로 업데이트됩니다</div>
+        <div style="font-size:12px;margin-top:4px">매주 월요일 오전 자동 생성</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="panel" id="p-settings"
           <div class="page-header">
             <div class="page-title">시스템 설정</div>
             <div class="page-sub">관리자 비밀번호를 변경합니다.</div>
@@ -4464,6 +4521,110 @@ function syncMobileTab(el) {
   document.querySelectorAll('.mat-btn').forEach(b => b.classList.remove('active'));
   if (el) el.classList.add('active');
 }
+
+// ── AI 교육 탐색 ────────────────────────────────────────
+async function loadEduSearchSettings() {
+  try {
+    const r = await api('/api/edu-search-settings');
+    if (!r.ok) return;
+    const s = r.data;
+    ['site_hrd','site_kosha','site_moel','site_extra',
+     'cat_legal','cat_safety','cat_job','cat_leader',
+     'cond_free','cond_supported','cond_online','cond_offline'].forEach(key => {
+      const el = document.getElementById('s-' + key);
+      if (el) el.checked = s[key] === 'true';
+    });
+  } catch(e) {}
+}
+
+async function saveEduSearchSettings() {
+  const keys = ['site_hrd','site_kosha','site_moel','site_extra',
+    'cat_legal','cat_safety','cat_job','cat_leader',
+    'cond_free','cond_supported','cond_online','cond_offline'];
+  const body = {};
+  keys.forEach(key => {
+    const el = document.getElementById('s-' + key);
+    if (el) body[key] = el.checked ? 'true' : 'false';
+  });
+  const r = await api('/api/edu-search-settings', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body) });
+  if (r.ok) showToast('✅ 설정이 저장됐습니다');
+}
+
+async function loadEduDrafts() {
+  const el = document.getElementById('ai-edu-drafts-list');
+  if (!el) return;
+  el.innerHTML = '<div style="text-align:center;padding:20px;color:#94a3b8">불러오는 중...</div>';
+  const r = await api('/api/edu-drafts');
+  if (!r.ok || !r.data?.length) {
+    el.innerHTML = '<div style="text-align:center;padding:40px;color:#94a3b8"><div style="font-size:32px;margin-bottom:8px">🤖</div><div style="font-size:14px">코워크에서 교육 리스트가 자동으로 업데이트됩니다</div><div style="font-size:12px;margin-top:4px">매주 월요일 오전 자동 생성</div></div>';
+    return;
+  }
+  const pending = r.data.filter(d => d.status === 'pending');
+  const published = r.data.filter(d => d.status === 'published');
+  let html = '';
+  if (pending.length) {
+    html += '<div style="font-size:12px;font-weight:700;color:#64748b;margin-bottom:8px">검토 대기 (' + pending.length + '건)</div>';
+    html += pending.map(d => `
+      <div style="border:1px solid #e2e8f0;border-radius:8px;padding:16px;margin-bottom:8px;background:#fff">
+        <div style="display:flex;align-items:flex-start;gap:12px">
+          <input type="checkbox" class="draft-check" data-id="${d.id}" style="margin-top:3px;width:16px;height:16px">
+          <div style="flex:1">
+            <div style="font-size:14px;font-weight:700;color:#1a202c;margin-bottom:6px">${d.title}</div>
+            <div style="font-size:12px;color:#64748b;margin-bottom:6px;display:flex;gap:12px;flex-wrap:wrap">
+              ${d.category ? '<span>📂 ' + d.category + '</span>' : ''}
+              ${d.target ? '<span>👤 ' + d.target + '</span>' : ''}
+              ${d.cost ? '<span>💰 ' + d.cost + '</span>' : ''}
+              ${d.period ? '<span>📅 ' + d.period + '</span>' : ''}
+              ${d.source_site ? '<span>🌐 ' + d.source_site + '</span>' : ''}
+            </div>
+            <div style="font-size:13px;color:#374151;line-height:1.6;margin-bottom:8px">${d.content}</div>
+            <div style="display:flex;gap:8px;align-items:center">
+              ${d.source_url ? '<a href="' + d.source_url + '" target="_blank" style="font-size:12px;color:#1d4e89">🔗 원문 보기</a>' : ''}
+              <span style="font-size:11px;color:#94a3b8">${d.created_at}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    `).join('');
+  }
+  if (published.length) {
+    html += '<div style="font-size:12px;font-weight:700;color:#16a34a;margin:16px 0 8px">게시 완료 (' + published.length + '건)</div>';
+    html += published.slice(0,3).map(d => `
+      <div style="border:1px solid #bbf7d0;border-radius:8px;padding:12px;margin-bottom:6px;background:#f0fdf4;opacity:.7">
+        <div style="font-size:13px;font-weight:600;color:#15803d">✅ ${d.title}</div>
+        <div style="font-size:11px;color:#94a3b8;margin-top:4px">게시: ${d.published_at||''}</div>
+      </div>
+    `).join('');
+  }
+  el.innerHTML = html;
+}
+
+async function publishSelectedDrafts() {
+  const checks = document.querySelectorAll('.draft-check:checked');
+  if (!checks.length) { alert('게시할 항목을 선택해주세요'); return; }
+  if (!confirm(checks.length + '건을 공지로 게시하시겠습니까?')) return;
+  let ok = 0;
+  for (const c of checks) {
+    const r = await api('/api/edu-drafts/' + c.dataset.id + '/publish', { method:'POST' });
+    if (r.ok) ok++;
+  }
+  showToast('✅ ' + ok + '건이 공지로 게시됐습니다');
+  loadEduDrafts();
+}
+
+async function deleteSelectedDrafts() {
+  const checks = document.querySelectorAll('.draft-check:checked');
+  if (!checks.length) { alert('삭제할 항목을 선택해주세요'); return; }
+  if (!confirm(checks.length + '건을 삭제하시겠습니까?')) return;
+  for (const c of checks) {
+    await api('/api/edu-drafts/' + c.dataset.id, { method:'DELETE' });
+  }
+  showToast('🗑️ 삭제됐습니다');
+  loadEduDrafts();
+}
+
+// p-ai-edu 패널 진입 시 데이터 로드
+const _origShowPanel = typeof showPanel === 'function' ? showPanel : null;
 
 </script>
 </body>

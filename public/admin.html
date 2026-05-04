@@ -1731,10 +1731,17 @@ tbody tr:hover { background:#f8fafd; }
       <div style="font-size:14px;font-weight:700;color:#1d4e89;margin-bottom:14px">🔧 검색 설정</div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
         <div>
-          <div style="font-size:12px;font-weight:700;color:#64748b;margin-bottom:8px">검색 사이트</div>
-          <label style="display:flex;align-items:center;gap:8px;margin-bottom:6px;font-size:13px"><input type="checkbox" id="s-site_hrd"> HRD-Net (hrd.go.kr)</label>
-          <label style="display:flex;align-items:center;gap:8px;margin-bottom:6px;font-size:13px"><input type="checkbox" id="s-site_kosha"> 안전보건공단 (kosha.or.kr)</label>
-          <label style="display:flex;align-items:center;gap:8px;margin-bottom:6px;font-size:13px"><input type="checkbox" id="s-site_moel"> 고용노동부 (moel.go.kr)</label>
+<div style="font-size:12px;font-weight:700;color:#64748b;margin-bottom:8px">검색 사이트</div>
+          <div style="font-size:11px;font-weight:700;color:#1d4e89;margin-bottom:6px">우선순위 1 — 협약 무료 교육</div>
+          <label style="display:flex;align-items:center;gap:8px;margin-bottom:6px;font-size:13px"><input type="checkbox" id="s-site_rapa"> 한국전파진흥협회 (rapa.or.kr)</label>
+          <label style="display:flex;align-items:center;gap:8px;margin-bottom:6px;font-size:13px"><input type="checkbox" id="s-site_sw"> 한국AI소프트웨어산업협회 (sw.or.kr)</label>
+          <label style="display:flex;align-items:center;gap:8px;margin-bottom:6px;font-size:13px"><input type="checkbox" id="s-site_gseek"> 경기도평생학습포탈 (gseek.kr)</label>
+          <label style="display:flex;align-items:center;gap:8px;margin-bottom:14px;font-size:13px"><input type="checkbox" id="s-site_koita"> 한국산업기술진흥협회 (koita.or.kr)</label>
+          <div style="font-size:11px;font-weight:700;color:#1d4e89;margin-bottom:6px">우선순위 2 — 지역 상공회의소 · 기타</div>
+          <label style="display:flex;align-items:center;gap:8px;margin-bottom:6px;font-size:13px"><input type="checkbox" id="s-site_bcci"> 부산상공회의소 (bcci.or.kr)</label>
+          <label style="display:flex;align-items:center;gap:8px;margin-bottom:6px;font-size:13px"><input type="checkbox" id="s-site_incheon"> 인천상공회의소 (incheon.korcham.net)</label>
+          <label style="display:flex;align-items:center;gap:8px;margin-bottom:6px;font-size:13px"><input type="checkbox" id="s-site_mokpo"> 목포상공회의소 (mokpocci.korcham.net)</label>
+          <label style="display:flex;align-items:center;gap:8px;margin-bottom:6px;font-size:13px"><input type="checkbox" id="s-site_fintech"> 핀테크 포털 (fintech.or.kr)</label>
           <label style="display:flex;align-items:center;gap:8px;font-size:13px"><input type="checkbox" id="s-site_extra"> 기타 관련 사이트 포함</label>
         </div>
         <div>
@@ -4529,7 +4536,7 @@ async function loadEduSearchSettings() {
     const r = await res.json();
     if (!r.ok) return;
     const s = r.data;
-    ['site_hrd','site_kosha','site_moel','site_extra',
+    ['site_rapa','site_sw','site_gseek','site_koita','site_bcci','site_incheon','site_mokpo','site_fintech','site_extra',
      'cat_legal','cat_safety','cat_job','cat_leader',
      'cond_free','cond_supported','cond_online','cond_offline'].forEach(key => {
       const el = document.getElementById('s-' + key);
@@ -4539,7 +4546,7 @@ async function loadEduSearchSettings() {
 }
 
 async function saveEduSearchSettings() {
-  const keys = ['site_hrd','site_kosha','site_moel','site_extra',
+  const keys = ['site_rapa','site_sw','site_gseek','site_koita','site_bcci','site_incheon','site_mokpo','site_fintech','site_extra',
     'cat_legal','cat_safety','cat_job','cat_leader',
     'cond_free','cond_supported','cond_online','cond_offline'];
   const body = {};

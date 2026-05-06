@@ -4614,11 +4614,39 @@ async function publishSelectedDrafts() {
   const checks = document.querySelectorAll('.draft-check:checked');
   if (!checks.length) { alert('게시할 항목을 선택해주세요'); return; }
   if (!confirm(checks.length + '건을 공지로 게시하시겠습니까?')) return;
+
+  // 전체 초안 목록에서 선택된 항목 데이터 가져오기
+  const res0 = await fetch('/api/edu-drafts');
+  const r0 = await res0.json();
+  const allDrafts = r0.data || [];
+  const checkedIds = [...checks].map(c => parseInt(c.dataset.id));
+
   let ok = 0;
-  for (const c of checks) {
-    const res = await fetch('/api/edu-drafts/' + c.dataset.id + '/publish', { method:'POST' });
+  for (const draft of allDrafts.filter(d => checkedIds.includes(d.id))) {
+    // 상세 정보를 포함한 공지 내용 생성
+    let content = draft.content || '';
+    const details = [];
+    if (draft.category)    details.push('📂 카테고리: ' + draft.category);
+    if (draft.target)      details.push('👤 교육 대상: ' + draft.target);
+    if (draft.cost)        details.push('💰 비용: ' + draft.cost);
+    if (draft.period)      details.push('📅 기간/일정: ' + draft.period);
+    if (draft.source_site) details.push('🌐 출처: ' + draft.source_site);
+    if (draft.source_url)  details.push('🔗 링크: ' + draft.source_url);
+    if (details.length) content = content + '\n\n' + details.join('\n');
+
+    const res = await fetch('/api/edu-drafts/' + draft.id + '/publish', { method:'POST' });
     const r = await res.json();
-    if (r.ok) ok++;
+    if (r.ok) {
+      // 공지 내용 업데이트 (publish 후 notice ID로 내용 수정)
+      if (r.noticeId) {
+        await fetch('/api/notices/' + r.noticeId, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ content })
+        });
+      }
+      ok++;
+    }
   }
   showToast('✅ ' + ok + '건이 공지로 게시됐습니다');
   loadEduDrafts();

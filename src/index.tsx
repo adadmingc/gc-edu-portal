@@ -125,9 +125,17 @@ app.post('/api/auth/change-pw', async (c) => {
   ).first<{ value: string }>()
   const pw = row?.value ?? 'hr2026'
   if (current !== pw) return err('현재 비밀번호가 올바르지 않습니다', 401)
+const details: string[] = []
+  if (draft.category)    details.push('📂 카테고리: ' + draft.category)
+  if (draft.target)      details.push('👤 교육 대상: ' + draft.target)
+  if (draft.cost)        details.push('💰 비용: ' + draft.cost)
+  if (draft.period)      details.push('📅 기간/일정: ' + draft.period)
+  if (draft.source_site) details.push('🌐 출처: ' + draft.source_site)
+  if (draft.source_url)  details.push('🔗 링크: ' + draft.source_url)
+  const fullContent = draft.content + (details.length ? '\n\n' + details.join('\n') : '')
   await c.env.DB.prepare(
-    `INSERT INTO settings(key,value) VALUES('admin_pw',?) ON CONFLICT(key) DO UPDATE SET value=excluded.value`
-  ).bind(next).run()
+    `INSERT INTO edu_notices (title, content, author, created_at) VALUES (?, ?, ?, datetime('now','localtime'))`
+  ).bind(draft.title, fullContent, 'AI 교육탐색').run()
   return ok(null)
 })
 

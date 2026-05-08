@@ -4,7 +4,7 @@ import { defineConfig } from 'vite'
 export default defineConfig({
   plugins: [
     devServer({
-      entry: 'src/server.ts',
+      entry: 'src/index.tsx',  // dev: Hono app export default만 필요
     }),
   ],
   build: {

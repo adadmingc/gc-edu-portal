@@ -1,0 +1,17 @@
+services:
+  app:
+    image: gc-edu-portal:latest
+    ports:
+      - "${HOST_PORT:-3000}:3000"   # HOST_PORT = 서버 외부 포트 (예: 30011)
+    volumes:
+      - ./data:/app/data            # SQLite 파일 영속성
+    env_file:
+      - .env
+    environment:
+      - PORT=3000                   # 컨테이너 내부는 항상 3000
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:3000/api/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
